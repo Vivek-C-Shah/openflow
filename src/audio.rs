@@ -61,6 +61,7 @@ impl Recorder {
 
     pub fn stop(&mut self) -> Recording {
         self.stream = None; // drops the stream -> mic released
+        crate::ui::set_level(0.0);
         let samples = std::mem::take(&mut *self.buf.lock().unwrap());
         Recording { samples, rate: self.rate }
     }
@@ -78,9 +79,15 @@ fn build<T: SizedSample + Copy + Send + 'static>(
         cfg,
         move |data: &[T], _: &cpal::InputCallbackInfo| {
             if let Ok(mut b) = buf.lock() {
+                let start = b.len();
                 for frame in data.chunks(channels) {
                     let sum: f32 = frame.iter().map(|&s| conv(s)).sum();
                     b.push(sum / channels as f32);
+                }
+                let chunk = &b[start..];
+                if !chunk.is_empty() {
+                    let rms = (chunk.iter().map(|s| s * s).sum::<f32>() / chunk.len() as f32).sqrt();
+                    crate::ui::set_level(rms);
                 }
             }
         },
@@ -89,23 +96,41 @@ fn build<T: SizedSample + Copy + Send + 'static>(
     )?)
 }
 
-/// Box-filtered linear resampling (good enough for speech recognition).
+/// Band-limited (windowed-sinc, Blackman) resampling. Removes everything
+/// above the new Nyquist frequency so mic hiss can't alias into the speech band.
 pub fn resample(input: &[f32], from: u32, to: u32) -> Vec<f32> {
     if from == to || input.is_empty() {
         return input.to_vec();
     }
-    let ratio = from as f64 / to as f64;
-    let n = (input.len() as f64 / ratio) as usize;
-    let half = (ratio / 2.0).max(0.5);
-    (0..n)
-        .map(|i| {
-            let center = i as f64 * ratio;
-            let lo = ((center - half).floor().max(0.0)) as usize;
-            let hi = ((center + half).ceil() as usize).min(input.len() - 1);
-            let slice = &input[lo..=hi];
-            slice.iter().sum::<f32>() / slice.len() as f32
-        })
-        .collect()
+    let ratio = to as f64 / from as f64;
+    let fc = 0.5 * ratio.min(1.0) * 0.92; // cutoff in cycles per input sample
+    let half = (8.0 / (2.0 * fc)).ceil() as i64; // 8 zero crossings each side
+    let n_out = (input.len() as f64 * ratio) as usize;
+    let len = input.len() as i64;
+    let mut out = Vec::with_capacity(n_out);
+    for i in 0..n_out {
+        let t = i as f64 / ratio;
+        let center = t.floor() as i64;
+        let (mut acc, mut norm) = (0.0f64, 0.0f64);
+        for k in (center - half + 1)..=(center + half) {
+            let x = t - k as f64;
+            let w = x / half as f64;
+            if w.abs() >= 1.0 {
+                continue;
+            }
+            let arg = 2.0 * fc * x;
+            let sinc = if arg.abs() < 1e-9 { 1.0 } else { (std::f64::consts::PI * arg).sin() / (std::f64::consts::PI * arg) };
+            let pw = std::f64::consts::PI * w;
+            let blackman = 0.42 + 0.5 * pw.cos() + 0.08 * (2.0 * pw).cos();
+            let h = sinc * blackman;
+            norm += h;
+            if (0..len).contains(&k) {
+                acc += input[k as usize] as f64 * h;
+            }
+        }
+        out.push(if norm.abs() > 1e-12 { (acc / norm) as f32 } else { 0.0 });
+    }
+    out
 }
 
 pub struct Speech {
@@ -265,6 +290,19 @@ mod tests {
     fn resample_length() {
         let x = vec![0.0f32; 48_000];
         assert_eq!(resample(&x, 48_000, 16_000).len(), 16_000);
+    }
+
+    fn rms(x: &[f32]) -> f32 {
+        (x.iter().map(|s| s * s).sum::<f32>() / x.len() as f32).sqrt()
+    }
+
+    #[test]
+    fn resample_keeps_speech_band_and_removes_aliases() {
+        let tone = |f: f32| (0..48_000).map(|i| (2.0 * std::f32::consts::PI * f * i as f32 / 48_000.0).sin() * 0.5).collect::<Vec<_>>();
+        let speech = resample(&tone(1_000.0), 48_000, 16_000);
+        assert!((rms(&speech[200..15_800]) - 0.3535).abs() < 0.02); // 1 kHz passes
+        let hiss = resample(&tone(12_000.0), 48_000, 16_000);
+        assert!(rms(&hiss[200..15_800]) < 0.01); // 12 kHz would alias to 4 kHz; must be gone
     }
 
     #[test]

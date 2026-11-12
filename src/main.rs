@@ -85,6 +85,10 @@ fn real_main() -> Result<()> {
             println!("{}", control::send("reload")?);
             Ok(())
         }
+        "demo" => {
+            println!("{}", control::send("demo")?);
+            Ok(())
+        }
         "status" => {
             println!("OpenFlow is {}", if control::is_running() { "running" } else { "not running" });
             Ok(())
@@ -96,7 +100,7 @@ fn real_main() -> Result<()> {
                 println!("{}", p.display());
             } else {
                 println!("Opening {}", p.display());
-                open_file(&p)?;
+                setup::open_path(&p)?;
                 println!("Run `openflow reload` after saving.");
             }
             Ok(())
@@ -109,8 +113,19 @@ fn real_main() -> Result<()> {
             if rest.is_empty() {
                 bail!("usage: openflow transcribe <file.wav>...");
             }
-            let recs = rest.iter().map(|p| audio::read_wav(std::path::Path::new(p))).collect::<Result<Vec<_>>>()?;
-            run_many(recs)
+            // --talk <ms>: wait this long before processing, like a user speaking
+            let mut talk = 0u64;
+            let mut files = Vec::new();
+            let mut it = rest.iter();
+            while let Some(a) = it.next() {
+                if a == "--talk" {
+                    talk = it.next().and_then(|v| v.parse().ok()).unwrap_or(0);
+                } else {
+                    files.push(a);
+                }
+            }
+            let recs = files.iter().map(|p| audio::read_wav(std::path::Path::new(p.as_str()))).collect::<Result<Vec<_>>>()?;
+            run_many(recs, talk)
         }
         "last" => match History::last_text() {
             Some(t) => {
@@ -144,6 +159,12 @@ fn real_main() -> Result<()> {
             Ok(())
         }
         "doctor" => doctor(),
+        "render-preview" => {
+            let dir = std::path::PathBuf::from(rest.first().map(|s| s.as_str()).unwrap_or("docs"));
+            openflow::ui::render_previews(&dir)?;
+            println!("Wrote overlay previews to {}", dir.display());
+            Ok(())
+        }
         "" | "help" | "-h" | "--help" => {
             println!("{HELP}");
             Ok(())
@@ -167,20 +188,19 @@ fn test_mic(secs: u64) -> Result<()> {
 }
 
 fn run_pipeline(rec: audio::Recording, _target: Target) -> Result<()> {
-    run_many(vec![rec])
+    run_many(vec![rec], 0)
 }
 
 /// Process recordings in one session: the first includes engine cold start,
 /// the rest show warm (engines already loaded) latency.
-fn run_many(recs: Vec<audio::Recording>) -> Result<()> {
+fn run_many(recs: Vec<audio::Recording>, talk_ms: u64) -> Result<()> {
     logger::init(true);
     let cfg = Config::load()?;
     let app = App::new(cfg.clone());
-    // Start engines up front, like the daemon does when you press the key.
-    for k in [Kind::Whisper, Kind::Llama] {
-        let _ = app.engines.prewarm(k, &cfg);
-    }
+    // Start + warm engines exactly like the daemon does when you press the key.
     let hold = app.engines.hold();
+    daemon::prewarm(&app, &app.cfg());
+    std::thread::sleep(Duration::from_millis(talk_ms));
     let mut result = Ok(());
     for (i, rec) in recs.into_iter().enumerate() {
         let t = Instant::now();
@@ -230,16 +250,5 @@ fn doctor() -> Result<()> {
         cfg.speech.provider, cfg.speech.language, if cfg.intelligence.enabled { cfg.intelligence.provider.as_str() } else { "off" },
         if cfg.engines.gpu { "gpu" } else { "cpu" }, cfg.engines.idle_unload_seconds);
     println!("logs: {}", config::data_dir().join("logs").display());
-    Ok(())
-}
-
-fn open_file(p: &std::path::Path) -> Result<()> {
-    #[cfg(windows)]
-    let mut c = { let mut c = std::process::Command::new("notepad"); c.arg(p); c };
-    #[cfg(target_os = "macos")]
-    let mut c = { let mut c = std::process::Command::new("open"); c.arg("-t").arg(p); c };
-    #[cfg(all(unix, not(target_os = "macos")))]
-    let mut c = { let mut c = std::process::Command::new("xdg-open"); c.arg(p); c };
-    c.spawn()?;
     Ok(())
 }

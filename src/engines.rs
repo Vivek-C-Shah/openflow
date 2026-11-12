@@ -39,6 +39,7 @@ struct Proc {
     child: Child,
     port: u16,
     ready: bool,
+    warmed: bool,
     log: PathBuf,
 }
 
@@ -91,6 +92,18 @@ impl Engines {
     pub fn prewarm(&self, kind: Kind, cfg: &Config) -> Result<()> {
         let mut g = self.inner.lock().unwrap();
         self.ensure(&mut g, kind, cfg)
+    }
+
+    /// True exactly once per engine process: the caller should send a warm-up request.
+    pub fn claim_warmup(&self, kind: Kind) -> bool {
+        let mut g = self.inner.lock().unwrap();
+        match g.procs[kind.idx()].as_mut() {
+            Some(p) if !p.warmed => {
+                p.warmed = true;
+                true
+            }
+            _ => false,
+        }
     }
 
     pub fn is_running(&self, kind: Kind) -> bool {
@@ -222,6 +235,9 @@ fn spawn(kind: Kind, cfg: &Config) -> Result<Proc> {
         Kind::Whisper => {
             args.push("-l".into());
             args.push(cfg.speech.language.clone());
+            if cfg.speech.beam_size > 1 {
+                args.extend(["-bs".into(), cfg.speech.beam_size.to_string(), "-bo".into(), cfg.speech.beam_size.to_string()]);
+            }
             if !cfg.engines.gpu {
                 args.push("-ng".into());
             }
@@ -268,7 +284,7 @@ fn spawn(kind: Kind, cfg: &Config) -> Result<Proc> {
     }
     let child = cmd.spawn().with_context(|| format!("starting {}", exe.display()))?;
     os::adopt(&child);
-    Ok(Proc { child, port, ready: false, log })
+    Ok(Proc { child, port, ready: false, warmed: false, log })
 }
 
 pub fn find_engine(kind: Kind, cfg: &Config) -> Option<PathBuf> {

@@ -178,6 +178,28 @@ impl Trigger {
         }
     }
 
+    /// Stop from outside the keyboard (overlay button).
+    pub fn stop_now(&mut self) -> Vec<Action> {
+        self.end_with(Action::Stop)
+    }
+
+    /// Cancel from outside the keyboard (overlay button).
+    pub fn cancel_now(&mut self) -> Vec<Action> {
+        self.end_with(Action::Cancel)
+    }
+
+    fn end_with(&mut self, a: Action) -> Vec<Action> {
+        let mut out = Vec::new();
+        if self.is_recording() {
+            if self.down {
+                self.ignore_up = true;
+            }
+            out.push(a);
+            self.finish(&mut out);
+        }
+        out
+    }
+
     /// Force the session to end (e.g. the microphone failed to open).
     pub fn abort(&mut self) -> Vec<Action> {
         let mut out = Vec::new();
@@ -354,6 +376,21 @@ mod tests {
         s.wait(500);
         s.key(Input::Up);
         assert_eq!(s.log, vec![Start(Mode::PushToTalk), Stop]);
+    }
+
+    #[test]
+    fn overlay_stop_ends_hands_free_without_restore() {
+        let mut s = Sim::new();
+        s.tap();
+        s.wait(100);
+        s.tap();
+        let a = s.t.stop_now();
+        assert_eq!(a, vec![Stop]); // two presses = Caps Lock unchanged
+        assert!(s.t.stop_now().is_empty());
+        s.wait(1000);
+        s.tap(); // a later lone tap is just a normal Caps Lock press
+        s.wait(1000);
+        assert_eq!(s.log, vec![Start(Mode::HandsFree)]);
     }
 
     #[test]

@@ -21,6 +21,7 @@ Rules:
 - Remove filler words (um, uh, like, you know, basically) and false starts, stutters and repeated words.
 - Apply self-corrections: when the speaker corrects themselves (\"no wait\", \"actually\", \"I mean\", \"sorry\", \"scratch that\", \"nahi\"), keep only the corrected version.
 - Fix punctuation, capitalization and obvious grammar slips. Keep the speaker's own words, tone and meaning.
+- The transcript comes from speech recognition and may contain misheard words. When the context makes the intended word obvious, fix it (e.g. \"we should eat on Wednesday at 3\" about scheduling -> \"meet\"). Never change words that already make sense.
 - Spoken formatting: \"new line\" = line break, \"new paragraph\" = blank line, \"comma\"/\"period\"/\"question mark\" = the symbol.
 - When the speaker lists several items, format them as a list.
 - Write numbers, times, dates and money the normal written way (3 PM, $20, 10%).
@@ -99,6 +100,28 @@ pub fn polish(app: &App, cfg: &Config, raw: &str, style: Style) -> Polished {
         }
     }
     Polished { text: text::rules(raw, style), via: "rules" }
+}
+
+/// Warm the local model and pre-fill its prompt cache with the system prompt
+/// and examples, so the real request only processes the new transcript.
+pub fn warmup(app: &App, cfg: &Config) {
+    if !app.engines.claim_warmup(Kind::Llama) {
+        return;
+    }
+    let t = Instant::now();
+    let r = app.engines.wait_ready(Kind::Llama, cfg, Duration::from_secs(60)).and_then(|base| {
+        let body = json!({
+            "messages": messages(cfg, "hello", Style::Default),
+            "temperature": 0.0,
+            "max_tokens": 1,
+            "cache_prompt": true,
+        });
+        chat(&format!("{base}/v1/chat/completions"), None, body, 60_000)
+    });
+    match r {
+        Ok(_) => log::info!("llama warmed up in {:?}", t.elapsed()),
+        Err(e) => log::debug!("llama warm-up failed: {e:#}"),
+    }
 }
 
 fn max_tokens(raw: &str) -> usize {

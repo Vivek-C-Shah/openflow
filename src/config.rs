@@ -32,6 +32,7 @@ provider = "local"    # "local" (offline, private) or "cloud" (Groq; needs api_k
 language = "auto"     # "auto", "en", "hi", or any Whisper language code
 script = "latin"      # "latin" = Hinglish in English letters, "native" = keep Devanagari
 model = ""            # path to a whisper ggml model; empty = auto-detect
+beam_size = 5         # 1 = fastest (greedy); 5 = more accurate (~+0.2s)
 
 [intelligence]
 enabled = true        # AI cleanup: fillers, self-corrections, punctuation, lists, tone
@@ -54,6 +55,9 @@ whisper_server = ""       # custom path to whisper-server; empty = auto
 llama_server = ""         # custom path to llama-server; empty = auto
 
 [output]
+overlay = true           # floating pill at the bottom of the screen while dictating
+idle_bar = true          # keep a tiny bar visible when idle (static image, no CPU)
+tray = true              # notification-area icon with menu
 sounds = true
 append_space = true       # add a space after prose so consecutive dictations join nicely
 restore_clipboard = true  # put your previous clipboard back after pasting
@@ -109,6 +113,7 @@ pub struct Speech {
     pub language: String,
     pub script: String,
     pub model: String,
+    pub beam_size: u32,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -137,6 +142,9 @@ pub struct Engines {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Output {
+    pub overlay: bool,
+    pub idle_bar: bool,
+    pub tray: bool,
     pub sounds: bool,
     pub append_space: bool,
     pub restore_clipboard: bool,

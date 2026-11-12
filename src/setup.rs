@@ -425,22 +425,57 @@ pub fn start_daemon() -> Result<()> {
     bail!("OpenFlow did not start; see {}", config::data_dir().join("logs").join("openflow.log").display())
 }
 
-pub fn set_autostart(on: bool) -> Result<()> {
+fn auto_launch() -> Result<auto_launch::AutoLaunch> {
     let exe = daemon_exe();
     let path = exe.to_string_lossy().to_string();
     let args: &[&str] = if exe.file_stem().is_some_and(|s| s == "openflow") { &["run"] } else { &[] };
-    let al = auto_launch::AutoLaunchBuilder::new()
+    auto_launch::AutoLaunchBuilder::new()
         .set_app_name("OpenFlow")
         .set_app_path(&path)
         .set_use_launch_agent(true)
         .set_args(args)
         .build()
-        .map_err(|e| anyhow!("{e}"))?;
+        .map_err(|e| anyhow!("{e}"))
+}
+
+pub fn autostart_enabled() -> bool {
+    auto_launch().and_then(|a| a.is_enabled().map_err(|e| anyhow!("{e}"))).unwrap_or(false)
+}
+
+pub fn set_autostart(on: bool) -> Result<()> {
+    let al = auto_launch()?;
     if on {
         al.enable().map_err(|e| anyhow!("{e}"))?;
     } else if al.is_enabled().unwrap_or(false) {
         al.disable().map_err(|e| anyhow!("{e}"))?;
     }
+    Ok(())
+}
+
+/// Open a file or folder with the OS default app.
+pub fn open_path(p: &Path) -> Result<()> {
+    #[cfg(windows)]
+    let mut c = {
+        let mut c = Command::new(if p.is_dir() { "explorer" } else { "notepad" });
+        c.arg(p);
+        c
+    };
+    #[cfg(target_os = "macos")]
+    let mut c = {
+        let mut c = Command::new("open");
+        if !p.is_dir() {
+            c.arg("-t");
+        }
+        c.arg(p);
+        c
+    };
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let mut c = {
+        let mut c = Command::new("xdg-open");
+        c.arg(p);
+        c
+    };
+    c.spawn()?;
     Ok(())
 }
 

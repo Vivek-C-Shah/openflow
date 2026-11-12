@@ -44,6 +44,20 @@ pub fn transcribe(app: &App, cfg: &Config, wav: &[u8]) -> Result<Transcript> {
     bail!("speech recognition failed ({})", errors.join("; "))
 }
 
+/// First inference after start is ~2 s slower (GPU kernel/buffer setup). Pay
+/// that cost while the user is still talking.
+pub fn warmup(app: &App, cfg: &Config) {
+    if !app.engines.claim_warmup(Kind::Whisper) {
+        return;
+    }
+    let t = Instant::now();
+    let wav = crate::audio::wav_bytes(&vec![0.0f32; crate::audio::RATE as usize / 2]);
+    match local(app, cfg, &wav, "") {
+        Ok(_) => log::info!("whisper warmed up in {:?}", t.elapsed()),
+        Err(e) => log::debug!("whisper warm-up failed: {e:#}"),
+    }
+}
+
 fn local(app: &App, cfg: &Config, wav: &[u8], prompt: &str) -> Result<String> {
     let deadline = Instant::now() + Duration::from_secs(60);
     let base = app.engines.wait_ready(Kind::Whisper, cfg, Duration::from_secs(45))?;
