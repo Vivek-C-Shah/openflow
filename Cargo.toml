@@ -4,6 +4,11 @@ version = "0.1.0"
 edition = "2021"
 description = "Free, local, private voice dictation. Double-tap Caps Lock and talk."
 license = "MIT"
+repository = "https://github.com/Vivek-C-Shah/openflow"
+homepage = "https://github.com/Vivek-C-Shah/openflow"
+readme = "README.md"
+keywords = ["dictation", "speech-to-text", "whisper", "voice", "productivity"]
+categories = ["accessibility", "command-line-utilities", "multimedia::audio"]
 default-run = "openflow"
 
 [lib]
