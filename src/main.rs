@@ -19,6 +19,7 @@ Usage: openflow <command>
   start | stop | restart | status
   reload            re-read the config file
   config            open the config file (config path: print its location)
+  config <section.key> <value>   set one setting, e.g. config groq.api_key gsk_...
   test [seconds]    record from the mic and show the result (no pasting)
   transcribe <wav>  run a WAV file through the full pipeline
   last              copy your last dictation to the clipboard
@@ -98,6 +99,23 @@ fn real_main() -> Result<()> {
             let p = config::config_path();
             if rest.first().map(|s| s.as_str()) == Some("path") {
                 println!("{}", p.display());
+            } else if let [key, value, ..] = rest {
+                let Some((section, name)) = key.split_once('.') else {
+                    bail!("use section.key, e.g. `openflow config groq.api_key gsk_...`");
+                };
+                let literal = if value == "true" || value == "false" || value.parse::<f64>().is_ok() {
+                    value.clone()
+                } else {
+                    format!("\"{}\"", value.replace('\\', "\\\\").replace('"', "\\\""))
+                };
+                setup::set_value(section, name, &literal)?;
+                Config::load()?; // fail loudly if the edit produced an invalid file
+                let shown = if name.contains("key") { "\"****\"".to_string() } else { literal };
+                println!("Set {section}.{name} = {shown}");
+                if control::is_running() {
+                    let _ = control::send("reload");
+                    println!("Reloaded the running daemon.");
+                }
             } else {
                 println!("Opening {}", p.display());
                 setup::open_path(&p)?;

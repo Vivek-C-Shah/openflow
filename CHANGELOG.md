@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- `openflow config <section.key> <value>` sets one setting and reloads the running daemon.
+
+### Fixed
+- Groq cleanup now works: Groq retired `llama-3.3-70b-versatile`, so the default is `qwen/qwen3.8-27b` (with reasoning off), and old configs are migrated automatically.
+- Narrow and non-breaking spaces and `<think>` blocks in AI output are normalized or removed.
+
 ## [0.1.0] - 2026-11-13
 
 ### Added

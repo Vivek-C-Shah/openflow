@@ -45,7 +45,7 @@ timeout_ms = 5000     # fall back to rule-based cleanup if the AI takes longer t
 # With a key, cloud is used as an automatic backup if local fails (and vice versa).
 api_key = ""
 stt_model = "whisper-large-v3-turbo"
-llm_model = "llama-3.3-70b-versatile"
+llm_model = "qwen/qwen3.8-27b"
 
 [engines]
 idle_unload_seconds = 30  # free ALL AI memory this long after the last dictation (0 = immediately)
@@ -182,7 +182,12 @@ impl Config {
         let mut base: toml::Value = toml::from_str(&template())?;
         let over: toml::Value = toml::from_str(user)?;
         merge(&mut base, over);
-        Ok(base.try_into()?)
+        let mut cfg: Config = base.try_into()?;
+        // Groq retired these; move old configs to the current default.
+        if ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"].contains(&cfg.groq.llm_model.as_str()) {
+            cfg.groq.llm_model = DEFAULT_GROQ_LLM.to_string();
+        }
+        Ok(cfg)
     }
 
     pub fn groq_key(&self) -> Option<String> {
@@ -217,6 +222,8 @@ fn merge(base: &mut toml::Value, over: toml::Value) {
     }
 }
 
+pub const DEFAULT_GROQ_LLM: &str = "qwen/qwen3.8-27b";
+
 pub fn config_path() -> PathBuf {
     if let Ok(p) = std::env::var("OPENFLOW_CONFIG") {
         return PathBuf::from(p);
@@ -243,6 +250,14 @@ pub fn engines_dir() -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn retired_groq_model_is_migrated() {
+        let c = Config::from_user_str("[groq]\nllm_model = \"llama-3.3-70b-versatile\"\n").unwrap();
+        assert_eq!(c.groq.llm_model, DEFAULT_GROQ_LLM);
+        let c = Config::from_user_str("[groq]\nllm_model = \"openai/gpt-oss-120b\"\n").unwrap();
+        assert_eq!(c.groq.llm_model, "openai/gpt-oss-120b");
+    }
 
     #[test]
     fn template_parses() {

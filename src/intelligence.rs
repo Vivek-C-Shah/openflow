@@ -142,12 +142,20 @@ fn local(app: &App, cfg: &Config, raw: &str, style: Style) -> Result<String> {
 }
 
 fn groq(cfg: &Config, key: &str, raw: &str, style: Style) -> Result<String> {
-    let body = json!({
+    let mut body = json!({
         "model": cfg.groq.llm_model,
         "messages": messages(cfg, raw, style),
         "temperature": 0.0,
         "max_tokens": max_tokens(raw),
     });
+    // Reasoning models would otherwise spend the latency budget thinking.
+    let m = cfg.groq.llm_model.as_str();
+    if m.starts_with("qwen/qwen3") {
+        body["reasoning_effort"] = json!("none");
+    } else if m.starts_with("openai/gpt-oss") {
+        body["reasoning_effort"] = json!("low");
+        body["include_reasoning"] = json!(false);
+    }
     chat("https://api.groq.com/openai/v1/chat/completions", Some(key), body, cfg.intelligence.timeout_ms)
 }
 

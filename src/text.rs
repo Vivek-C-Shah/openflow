@@ -227,6 +227,10 @@ pub fn sanitize_llm(out: &str) -> String {
             s.truncate(i);
         }
     }
+    if let Some(i) = s.find("</think>") {
+        s = s[i + "</think>".len()..].to_string();
+    }
+    s = s.replace(['\u{202f}', '\u{a0}'], " ");
     s = s.replace("<transcript>", "").replace("</transcript>", "");
     s = s.replace("<cleaned>", "").replace("</cleaned>", "");
     let s2 = s.trim().to_string();
@@ -344,6 +348,11 @@ pub fn expand_snippets(text: &str, snippets: &BTreeMap<String, String>) -> Strin
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sanitize_strips_think_and_odd_spaces() {
+        assert_eq!(sanitize_llm("<think>hmm</think>\nMeet at 3\u{202f}pm."), "Meet at 3 pm.");
+    }
 
     #[test]
     fn rules_remove_fillers_and_stutters() {

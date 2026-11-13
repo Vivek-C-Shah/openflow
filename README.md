@@ -67,6 +67,7 @@ The tray icon menu has: copy last dictation, history, settings, start at login, 
 ```
 openflow status | start | stop | restart
 openflow config            # open settings; then: openflow reload
+openflow config groq.api_key gsk_...   # change one setting (applies immediately)
 openflow test 5            # record 5 s and show what would be typed (nothing is pasted)
 openflow last              # copy your last dictation again
 openflow history           # what you said vs. what was typed
@@ -76,7 +77,7 @@ openflow autostart on|off
 
 ## Configure
 
-Run `openflow config` to open a fully commented settings file. The most useful settings:
+Run `openflow config` to open a fully commented settings file, or set one value with `openflow config section.key value`. The most useful settings:
 
 ```toml
 [trigger]
