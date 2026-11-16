@@ -7,7 +7,10 @@ All notable changes to this project are documented here. The format follows [Kee
 ### Added
 - `openflow config <section.key> <value>` sets one setting and reloads the running daemon.
 
+- Windows: "OpenFlow" Start menu entry, app icon and version info in the executables, and a "running" notification when you open it.
+
 ### Fixed
+- Windows: start at login failed when the user folder has a space in it (the startup command was not quoted). Existing installs are repaired the next time OpenFlow starts.
 - Groq cleanup now works: Groq retired `llama-3.3-70b-versatile`, so the default is `qwen/qwen3.8-27b` (with reasoning off), and old configs are migrated automatically.
 - Narrow and non-breaking spaces and `<think>` blocks in AI output are normalized or removed.
 

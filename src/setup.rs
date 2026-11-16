@@ -86,6 +86,12 @@ pub fn run(o: Opts) -> Result<()> {
         bail!("cloud mode needs a Groq API key: add it to {} under [groq]", config::config_path().display());
     }
 
+    #[cfg(windows)]
+    match create_start_menu_shortcut() {
+        Ok(()) => println!("\n  Start menu: added \"OpenFlow\""),
+        Err(e) => println!("\n  Start menu: could not add a shortcut ({e:#})"),
+    }
+
     if !o.no_autostart {
         match set_autostart(true) {
             Ok(()) => println!("\n  Start at login: enabled"),
@@ -395,12 +401,45 @@ pub fn daemon_exe() -> PathBuf {
     }
 }
 
+/// Path of the Start-menu shortcut.
+#[cfg(windows)]
+pub fn start_menu_shortcut() -> Option<PathBuf> {
+    dirs::data_dir().map(|d| d.join(r"Microsoft\Windows\Start Menu\Programs\OpenFlow.lnk"))
+}
+
+/// Add "OpenFlow" to the Start menu (searchable, with the app icon). Opening it
+/// starts the daemon, or says hello if it is already running.
+#[cfg(windows)]
+pub fn create_start_menu_shortcut() -> Result<()> {
+    use std::os::windows::process::CommandExt;
+    let lnk = start_menu_shortcut().ok_or_else(|| anyhow!("no Start menu folder"))?;
+    let exe = daemon_exe();
+    let q = |p: &Path| p.to_string_lossy().replace('\'', "''");
+    let script = format!(
+        "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('{lnk}');\
+         $s.TargetPath='{exe}';$s.Arguments='--hello';$s.WorkingDirectory='{dir}';\
+         $s.IconLocation='{exe},0';$s.Description='OpenFlow voice dictation';$s.Save()",
+        lnk = q(&lnk),
+        exe = q(&exe),
+        dir = q(exe.parent().unwrap_or(Path::new("."))),
+    );
+    let status = Command::new("powershell")
+        .args(["-NoProfile", "-NonInteractive", "-Command", &script])
+        .creation_flags(0x0800_0000) // CREATE_NO_WINDOW
+        .status()?;
+    if !status.success() {
+        bail!("powershell exited with {status}");
+    }
+    Ok(())
+}
+
 pub fn start_daemon() -> Result<()> {
     let exe = daemon_exe();
     let mut cmd = Command::new(&exe);
     if exe.file_stem().is_some_and(|s| s == "openflow") {
         cmd.arg("run");
     }
+    cmd.arg("--hello");
     cmd.stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null());
     #[cfg(windows)]
     {
@@ -428,6 +467,11 @@ pub fn start_daemon() -> Result<()> {
 fn auto_launch() -> Result<auto_launch::AutoLaunch> {
     let exe = daemon_exe();
     let path = exe.to_string_lossy().to_string();
+    // Windows runs login items as a raw command line: an unquoted path with a
+    // space (C:\Users\Jane Doe\...) silently fails to start. launchd takes an
+    // argv array, so macOS must stay unquoted.
+    #[cfg(not(target_os = "macos"))]
+    let path = format!("\"{path}\"");
     let args: &[&str] = if exe.file_stem().is_some_and(|s| s == "openflow") { &["run"] } else { &[] };
     auto_launch::AutoLaunchBuilder::new()
         .set_app_name("OpenFlow")

@@ -17,12 +17,14 @@ use windows_sys::Win32::UI::WindowsAndMessaging::*;
 const WM_STATE: u32 = WM_APP + 1;
 const WM_TRAY: u32 = WM_APP + 2;
 const WM_SHUTDOWN: u32 = WM_APP + 3;
+const WM_NOTICE: u32 = WM_APP + 4;
 const TIMER_ID: usize = 1;
 const TRAY_ID: u32 = 1;
 
 static HWND_UI: AtomicIsize = AtomicIsize::new(0);
 static SINK: OnceLock<CommandSink> = OnceLock::new();
 static SHARED: Mutex<Shared> = Mutex::new(Shared { status: Status::Idle, opts: None });
+static NOTICE: Mutex<Option<(String, String)>> = Mutex::new(None);
 
 struct Shared {
     status: Status,
@@ -149,6 +151,12 @@ pub fn set_options(o: Options) {
     post(WM_STATE);
 }
 
+/// Show a tray notification (balloon / Windows toast).
+pub fn notify(title: &str, body: &str) {
+    *NOTICE.lock().unwrap() = Some((title.to_string(), body.to_string()));
+    post(WM_NOTICE);
+}
+
 pub fn shutdown() {
     let h = HWND_UI.load(Ordering::SeqCst);
     if h != 0 {
@@ -193,6 +201,12 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) 
             }
             WM_SHUTDOWN => {
                 ui.tray(NIM_DELETE);
+                Some(0)
+            }
+            WM_NOTICE => {
+                if let Some((title, body)) = NOTICE.lock().unwrap().take() {
+                    ui.balloon(&title, &body);
+                }
                 Some(0)
             }
             m if m == ui.taskbar_created && m != 0 => {
@@ -399,6 +413,28 @@ impl Ui {
                 SetWindowPos(self.hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
                 self.visible = true;
             }
+        }
+    }
+
+    fn balloon(&mut self, title: &str, body: &str) {
+        if !self.tray_added {
+            return;
+        }
+        unsafe {
+            let mut nid: NOTIFYICONDATAW = std::mem::zeroed();
+            nid.cbSize = std::mem::size_of::<NOTIFYICONDATAW>() as u32;
+            nid.hWnd = self.hwnd;
+            nid.uID = TRAY_ID;
+            nid.uFlags = NIF_INFO;
+            nid.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON;
+            nid.hBalloonIcon = self.icon_idle;
+            for (i, c) in title.encode_utf16().take(63).enumerate() {
+                nid.szInfoTitle[i] = c;
+            }
+            for (i, c) in body.encode_utf16().take(255).enumerate() {
+                nid.szInfo[i] = c;
+            }
+            Shell_NotifyIconW(NIM_MODIFY, &nid);
         }
     }
 

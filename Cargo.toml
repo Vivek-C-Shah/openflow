@@ -1,6 +1,6 @@
 [package]
 name = "openflow"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Free, local, private voice dictation. Double-tap Caps Lock and talk."
 license = "MIT"
@@ -23,6 +23,9 @@ path = "src/main.rs"
 [[bin]]
 name = "openflow-daemon"
 path = "src/bin/openflow-daemon.rs"
+
+[build-dependencies]
+embed-resource = "2.5"
 
 [dependencies]
 anyhow = "1"

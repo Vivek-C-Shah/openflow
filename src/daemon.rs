@@ -45,10 +45,31 @@ fn params(cfg: &Config, key: TriggerKey) -> Params {
     }
 }
 
+fn hello_text() -> String {
+    let key = Config::load().map(|c| c.trigger.key).unwrap_or_else(|_| "CapsLock".into());
+    let key = if key.eq_ignore_ascii_case("capslock") { "Caps Lock".to_string() } else { key };
+    format!("Double-tap {key} to dictate, or hold it to talk. OpenFlow lives here in the tray.")
+}
+
 pub fn run(console: bool) -> Result<()> {
     logger::init(console);
-    let listener = control::bind().ok_or_else(|| anyhow!("OpenFlow is already running"))?;
+    // Opened from the Start menu / installer (not at login): say hello so the
+    // user sees that the background app is alive.
+    let hello = std::env::args().any(|a| a == "--hello");
+    let Some(listener) = control::bind() else {
+        if hello && control::send("hello").is_ok() {
+            return Ok(());
+        }
+        return Err(anyhow!("OpenFlow is already running"));
+    };
     engines::cleanup_orphans();
+    // Rewrite the login item in the current (quoted) format; 0.1.0 wrote an
+    // unquoted path that Windows can't start when the user name has a space.
+    if setup::autostart_enabled() {
+        if let Err(e) = setup::set_autostart(true) {
+            log::warn!("could not refresh start-at-login entry: {e:#}");
+        }
+    }
     let cfg = Config::load()?;
     let key = TriggerKey::parse(&cfg.trigger.key)?;
     let opts = ui_options(&cfg);
@@ -77,6 +98,10 @@ pub fn run(console: bool) -> Result<()> {
             });
             "demo".into()
         }
+        "hello" => {
+            ui::notify("OpenFlow is running", &hello_text());
+            "hello".into()
+        }
         "quit" => {
             let _ = ctl.send(Msg::Quit);
             "stopping".into()
@@ -94,6 +119,9 @@ pub fn run(console: bool) -> Result<()> {
         let _ = ui_tx.lock().unwrap().send(Msg::Ui(c));
     }));
 
+    if hello {
+        ui::notify("OpenFlow is running", &hello_text());
+    }
     log::info!("OpenFlow ready: double-tap {key:?} for hands-free, hold it for push-to-talk. Idle footprint: keyboard hook only.");
     keyboard::listen(key, Box::new(move |e| {
         let _ = tx.send(Msg::Key(e));

@@ -78,6 +78,14 @@ pub fn set_options(opts: Options) {
     let _ = opts;
 }
 
+/// Show a notification from the tray icon (no-op where there is no tray yet).
+pub fn notify(title: &str, body: &str) {
+    #[cfg(windows)]
+    win::notify(title, body);
+    #[cfg(not(windows))]
+    let _ = (title, body);
+}
+
 /// Remove the tray icon before exiting.
 pub fn shutdown() {
     #[cfg(windows)]
@@ -120,6 +128,10 @@ pub fn render_previews(dir: &std::path::Path) -> anyhow::Result<()> {
         let c = draw_icon(64, rec);
         std::fs::write(dir.join(if rec { "icon-recording.png" } else { "icon.png" }), png::encode(64, 64, &c.to_rgba()))?;
     }
+    let sizes = [16, 20, 24, 32, 40, 48, 64, 128, 256];
+    let images: Vec<(usize, Vec<u8>)> =
+        sizes.iter().map(|&n| (n, png::encode(n, n, &draw_icon(n, false).to_rgba()))).collect();
+    std::fs::write(dir.join("openflow.ico"), png::ico(&images))?;
     Ok(())
 }
 
