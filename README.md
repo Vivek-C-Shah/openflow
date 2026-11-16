@@ -12,6 +12,8 @@
 
 <img src="docs/img/overlay-hands-free.png" width="440" alt="OpenFlow overlay while dictating">
 
+**[Website and downloads](https://openflow-dictation.vercel.app)** · **[Latest release](https://github.com/Vivek-C-Shah/openflow/releases/latest)**
+
 </div>
 
 OpenFlow is an open-source alternative to paid dictation apps. It runs entirely on your own computer, costs nothing, sends nothing anywhere, and stays out of the way until you need it.

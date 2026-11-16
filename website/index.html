@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenFlow · Free voice dictation for every app</title>
+  <meta name="description" content="Double-tap Caps Lock and talk. OpenFlow turns speech into clean, punctuated text in any app. Free, open source, and it runs on your own computer.">
+  <meta name="theme-color" content="#f7f7f8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#16171b" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" href="/img/icon.png">
+  <meta property="og:title" content="OpenFlow · Free voice dictation for every app">
+  <meta property="og:description" content="Double-tap Caps Lock and talk. Clean, punctuated text in any app. Free, open source, runs on your computer.">
+  <meta property="og:image" content="https://openflow-dictation.vercel.app/img/og.png">
+  <meta property="og:url" content="https://openflow-dictation.vercel.app/">
+  <link rel="canonical" href="https://openflow-dictation.vercel.app/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preload" href="/fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1" defer></script>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/" aria-label="OpenFlow home">
+        <img src="/img/icon.png" width="28" height="28" alt="">
+        <span>OpenFlow</span>
+      </a>
+      <nav aria-label="Main">
+        <a href="#how">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#faq">FAQ</a>
+        <a href="https://github.com/Vivek-C-Shah/openflow" class="nav-gh"><i class="ph ph-github-logo" aria-hidden="true"></i><span>GitHub</span></a>
+      </nav>
+      <a class="btn btn-ink btn-sm" href="#download">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Hero: copy left, a live replica of the real overlay pill right -->
+    <section class="hero wrap">
+      <div class="hero-copy reveal">
+        <h1>Press Caps Lock twice and just talk.</h1>
+        <p class="lede">Free, open-source voice dictation that turns your speech into clean, punctuated text in any app. Runs on your own computer.</p>
+        <div class="cta-row">
+          <a class="btn btn-ink btn-lg" href="#download" data-os-cta>
+            <i class="ph ph-download-simple" aria-hidden="true"></i>
+            <span data-os-label>Download OpenFlow</span>
+          </a>
+          <a class="btn btn-ghost btn-lg" href="https://github.com/Vivek-C-Shah/openflow">
+            <i class="ph ph-github-logo" aria-hidden="true"></i>
+            <span>View source</span>
+          </a>
+        </div>
+      </div>
+
+      <figure class="stage reveal" aria-label="Animated demo: OpenFlow listens, then types the cleaned-up sentence">
+        <div class="doc">
+          <div class="doc-said" data-said aria-hidden="true"></div>
+          <p class="doc-line"><span data-typed></span><span class="caret" aria-hidden="true"></span></p>
+        </div>
+        <div class="pill" data-pill data-state="idle" aria-hidden="true">
+          <span class="pill-btn pill-x"><i class="ph-bold ph-x"></i></span>
+          <span class="bars">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          </span>
+          <span class="pill-btn pill-stop"><i class="ph-fill ph-stop"></i></span>
+        </div>
+        <figcaption class="stage-cap" data-cap>Idle: a thin bar at the bottom of your screen</figcaption>
+      </figure>
+    </section>
+
+    <!-- How it works: the actual key sequence -->
+    <section id="how" class="how wrap">
+      <h2 class="reveal">It stays out of sight until you need it</h2>
+      <ol class="steps">
+        <li class="step reveal">
+          <div class="keys"><kbd>Caps Lock</kbd><kbd>Caps Lock</kbd></div>
+          <h3>Double-tap to start</h3>
+          <p>A small pill appears and listens. Your Caps Lock state is left exactly as it was.</p>
+        </li>
+        <li class="step reveal">
+          <div class="keys keys-voice"><i class="ph ph-waveform" aria-hidden="true"></i></div>
+          <h3>Talk like you normally would</h3>
+          <p>Pause, say "um", change your mind halfway. It keeps up.</p>
+        </li>
+        <li class="step reveal">
+          <div class="keys"><kbd>Caps Lock</kbd></div>
+          <h3>Tap once to finish</h3>
+          <p>Clean text is typed wherever your cursor is. Your clipboard is put back afterwards.</p>
+        </li>
+      </ol>
+      <p class="how-alt reveal">Prefer push-to-talk? Hold <kbd>Caps Lock</kbd> while you speak and let go. <kbd>Esc</kbd> cancels.</p>
+    </section>
+
+    <!-- Before / after -->
+    <section class="cleanup wrap">
+      <h2 class="reveal">It writes what you meant, not just what you said</h2>
+      <div class="tabs reveal" role="tablist" aria-label="Examples">
+        <button role="tab" aria-selected="true" data-ex="0">Changing your mind</button>
+        <button role="tab" aria-selected="false" data-ex="1">Writing an email</button>
+        <button role="tab" aria-selected="false" data-ex="2">Hinglish</button>
+      </div>
+      <div class="compare reveal" role="tabpanel" aria-live="polite">
+        <div class="said">
+          <p class="col-label">You said</p>
+          <p data-ex-said></p>
+        </div>
+        <i class="ph ph-arrow-right compare-arrow" aria-hidden="true"></i>
+        <div class="typed">
+          <p class="col-label">OpenFlow typed</p>
+          <p data-ex-typed></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features bento: 5 items, 5 cells -->
+    <section id="features" class="features wrap">
+      <h2 class="reveal">Built to disappear</h2>
+      <div class="bento">
+        <article class="cell cell-idle reveal">
+          <div class="cell-text">
+            <h3>Nothing runs until you press the key</h3>
+            <p>While idle, OpenFlow is a 2.4 MB keyboard listener using no CPU. Speech models load when you start talking and unload 30 seconds after you stop.</p>
+          </div>
+          <img src="/img/overlay-states.png" width="440" height="600" loading="lazy" alt="The OpenFlow overlay in its five states: idle bar, listening, hands-free with cancel and stop buttons, writing, and error">
+        </article>
+        <article class="cell cell-private reveal">
+          <i class="ph ph-lock-key cell-icon" aria-hidden="true"></i>
+          <h3>Your voice stays on your computer</h3>
+          <p>Transcription and cleanup run locally with whisper.cpp and llama.cpp. Add a free Groq key only if you want it faster.</p>
+        </article>
+        <article class="cell cell-fast reveal">
+          <p class="big-num">~1<span>s</span></p>
+          <h3>From the last word to text on screen</h3>
+          <p>For a typical sentence on a mid-range NVIDIA GPU, or with a Groq key.</p>
+        </article>
+        <article class="cell cell-apps reveal">
+          <i class="ph ph-cursor-text cell-icon" aria-hidden="true"></i>
+          <h3>Works in every app</h3>
+          <p>Slack, Gmail, VS Code, Notion, WhatsApp Web. If it has a text cursor, OpenFlow can type into it, and it adjusts its tone for email, chat and code.</p>
+        </article>
+        <article class="cell cell-lang reveal">
+          <p class="lang-sample" lang="hi-Latn">Kal 4 baje call karte hain.</p>
+          <h3>English, Hindi and Hinglish</h3>
+          <p>Mix languages mid-sentence. Keep it in Latin script, or switch to Devanagari.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Download -->
+    <section id="download" class="download">
+      <div class="wrap">
+        <h2 class="reveal">Download OpenFlow</h2>
+        <p class="dl-meta reveal" data-release>Free and open source under the MIT license.</p>
+
+        <div class="os-tabs reveal" role="tablist" aria-label="Operating system">
+          <button role="tab" data-os="windows" aria-selected="true"><i class="ph ph-windows-logo" aria-hidden="true"></i>Windows</button>
+          <button role="tab" data-os="macos" aria-selected="false"><i class="ph ph-apple-logo" aria-hidden="true"></i>macOS</button>
+          <button role="tab" data-os="linux" aria-selected="false"><i class="ph ph-linux-logo" aria-hidden="true"></i>Linux</button>
+        </div>
+
+        <div class="os-panel reveal" role="tabpanel" data-panel="windows">
+          <div class="dl-step">
+            <h3>Install with one command</h3>
+            <p>Open PowerShell and paste this. It downloads OpenFlow, picks the right speech models for your PC, and starts it at login.</p>
+            <div class="cmd"><code>irm https://raw.githubusercontent.com/Vivek-C-Shah/openflow/main/install.ps1 | iex</code><button class="copy" type="button" aria-label="Copy command"><i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span></button></div>
+          </div>
+          <div class="dl-alt">
+            <a class="btn btn-ghost" href="https://github.com/Vivek-C-Shah/openflow/releases/latest/download/openflow-windows-x64.zip"><i class="ph ph-file-zip" aria-hidden="true"></i>Download the .zip instead</a>
+            <p>Windows 10 or 11, 64-bit. An NVIDIA GPU makes it fastest, but any PC works.</p>
+          </div>
+        </div>
+
+        <div class="os-panel reveal" role="tabpanel" data-panel="macos" hidden>
+          <p class="beta"><i class="ph ph-flask" aria-hidden="true"></i>Beta: macOS builds pass our automated tests but haven't been tried on a real Mac yet. <a href="https://github.com/Vivek-C-Shah/openflow/issues">Tell us how it goes.</a></p>
+          <div class="dl-step">
+            <h3>Install with one command</h3>
+            <p>Open Terminal and paste this. Speech engines are installed with Homebrew. The trigger key on a Mac is Right Option.</p>
+            <div class="cmd"><code>curl -fsSL https://raw.githubusercontent.com/Vivek-C-Shah/openflow/main/install.sh | sh</code><button class="copy" type="button" aria-label="Copy command"><i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span></button></div>
+          </div>
+          <div class="dl-alt">
+            <a class="btn btn-ghost" href="https://github.com/Vivek-C-Shah/openflow/releases/latest/download/openflow-macos-arm64.tar.gz"><i class="ph ph-file-archive" aria-hidden="true"></i>Apple Silicon</a>
+            <a class="btn btn-ghost" href="https://github.com/Vivek-C-Shah/openflow/releases/latest/download/openflow-macos-x64.tar.gz"><i class="ph ph-file-archive" aria-hidden="true"></i>Intel</a>
+          </div>
+        </div>
+
+        <div class="os-panel reveal" role="tabpanel" data-panel="linux" hidden>
+          <p class="beta"><i class="ph ph-flask" aria-hidden="true"></i>Beta: Linux builds pass our automated tests but haven't been tried on a real desktop yet. X11 only for now. <a href="https://github.com/Vivek-C-Shah/openflow/issues">Tell us how it goes.</a></p>
+          <div class="dl-step">
+            <h3>Install with one command</h3>
+            <p>Paste this into a terminal. It installs to <code class="inline">~/.local/bin</code> and starts at login.</p>
+            <div class="cmd"><code>curl -fsSL https://raw.githubusercontent.com/Vivek-C-Shah/openflow/main/install.sh | sh</code><button class="copy" type="button" aria-label="Copy command"><i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span></button></div>
+          </div>
+          <div class="dl-alt">
+            <a class="btn btn-ghost" href="https://github.com/Vivek-C-Shah/openflow/releases/latest/download/openflow-linux-x64.tar.gz"><i class="ph ph-file-archive" aria-hidden="true"></i>Download the .tar.gz</a>
+          </div>
+        </div>
+
+        <p class="mobile-note" data-mobile-note hidden><i class="ph ph-desktop" aria-hidden="true"></i>OpenFlow is a desktop app. Open this page on your computer to install it.</p>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="faq wrap">
+      <h2 class="reveal">Questions</h2>
+      <div class="faq-list">
+        <details class="reveal">
+          <summary>Is it really free?</summary>
+          <p>Yes. OpenFlow is MIT-licensed open source, and the speech models it downloads are open-weight. There is no account, subscription or usage limit. The optional Groq key is also free.</p>
+        </details>
+        <details class="reveal">
+          <summary>Does my audio leave my computer?</summary>
+          <p>Not by default. Everything runs locally, and history is stored only on your machine. If you add a Groq key and choose cloud mode, audio is sent to Groq for transcription.</p>
+        </details>
+        <details class="reveal">
+          <summary>What hardware do I need?</summary>
+          <p>Any 64-bit Windows PC works. Setup picks smaller models for computers without an NVIDIA GPU, so it stays usable, just slower. Plan for about 5 GB of disk space with an NVIDIA GPU (models plus CUDA engines) and about 1.5 GB without one.</p>
+        </details>
+        <details class="reveal">
+          <summary>How accurate is it?</summary>
+          <p>In our own tests on a minute of natural speech, it got about 99% of words right, including names, numbers, dates and Indian currency like "2.5 lakhs". Add names and jargon to your personal dictionary to help it further.</p>
+        </details>
+        <details class="reveal">
+          <summary>How do I uninstall it?</summary>
+          <p>Run <code class="inline">openflow autostart off</code> and <code class="inline">openflow stop</code>, then delete the OpenFlow folder in <code class="inline">%LOCALAPPDATA%\Programs</code> and the Start menu shortcut.</p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <a class="brand" href="/"><img src="/img/icon.png" width="24" height="24" alt=""><span>OpenFlow</span></a>
+      <nav aria-label="Footer">
+        <a href="https://github.com/Vivek-C-Shah/openflow">Source code</a>
+        <a href="https://github.com/Vivek-C-Shah/openflow/issues">Report a problem</a>
+        <a href="https://github.com/Vivek-C-Shah/openflow/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://github.com/Vivek-C-Shah/openflow/blob/main/LICENSE">MIT license</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>

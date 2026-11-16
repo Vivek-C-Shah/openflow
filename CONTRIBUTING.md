@@ -52,3 +52,7 @@ The design principles are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Pleas
 ## Reporting dictation accuracy
 
 Run `openflow history` to see what was heard and what was typed. Include the `said:` / `typed:` lines, the language you spoke, your microphone, and your `[speech]` settings. Attach audio from `history/audio/` only if you're comfortable sharing it.
+
+## Website
+
+`website/` is the static site at https://openflow-dictation.vercel.app (plain HTML, CSS and JS, no build step). Preview it with `python -m http.server -d website 4321`. Download buttons use GitHub's `releases/latest/download/...` links, so a new release shows up on the site without redeploying. Maintainers deploy with `vercel deploy --prod` from `website/`.
